@@ -37,6 +37,9 @@ library(ggplot2)
 ## Load scales library
 library(scales)
 
+## Avoid scientific notation in output
+options(scipen=999)
+
 ## Load the data (i.e. read.csv())
 data <- read.csv("activity.csv")
 
@@ -46,43 +49,31 @@ total$steps <- total$x
 total$date <- as.Date(total$date)
 
 # Calculate the average number of steps per day
-avg <- aggregate(x=data$steps, list(date=data$date), mean) 
-avg.steps <- mean(data$steps, na.rm=TRUE)
+avg.steps <- round( mean(total$x, na.rm = TRUE), 0)
 
 # Calculate the median number of steps per day
-med <- aggregate(x=data$steps, list(date=data$date), median)
-med.steps <- median(data$steps, na.rm=TRUE)
+median.steps <- round( median(total$x, na.rm=TRUE), 0)
 
 # Make a histogram of the total number of steps taken each day
-datebreaks <- as.Date(total$date)
-p <- ggplot(total, aes(y=steps, x=date)) +geom_bar(stat="identity")
-p <- p + theme(axis.text.x = element_text(angle=90, hjust=1))
-p <- p + scale_x_date(breaks=datebreaks, labels=date_format("%b %d") )
-p <- p + ggtitle("Total Number of Steps Taken Each Day")
-p
+qplot(steps, data=total) 
+
 ```
 
 ## What is the mean total number of steps taken per day?
 
 The mean number of steps taken per day With missing values is: `r avg.steps`.
 
-The median number of steps taken per day with missing values is: `r med.steps`.
+The median number of steps taken per day with missing values is: `r median.steps`.
 
 ## What is the average daily activity pattern?
 
 ```{r, echo=TRUE}
 
-## Create interval bins of 1-288 (intervals per day)
-data$intervalbin <- rep(seq(1,288))
-
-## Calculate the average number of steps per interval
-avginterval <- aggregate(x=data$steps, list(y=data$intervalbin), mean, na.rm=TRUE)
-
-## Interval with the maximum number of steps
-max.step <- avginterval$y[which.max(avginterval$x)]
+## Average number of steps per interval
+avg.interval <- aggregate(x=data$steps, list(y = data$interval), mean, na.rm=TRUE )
 
 ## Time series plot of interval vs avg number of steps
-plot(avginterval$y, avginterval$x, type="l", xlab="Interval #", ylab="Avg. Steps", main="Interval vs Avg Number of Steps")
+plot(avg.interval$y, avg.interval$x, type="l", xlab="Interval #", ylab="Avg. Steps", main="Interval vs Avg Number of Steps")
 
 ```
 
@@ -93,7 +84,7 @@ The 5-minute interval that contains the maximum number of steps is: `r max.step 
 ```{r, echo=TRUE, fig.height=10, fig.width=15}
 
 ## Calculate number of rows with missing values
-num.rows.missing <- nrow(data[is.na(data$steps)==TRUE,])
+num.rows.missing <- nrow( data [is.na(data$steps),] )
 
 ## Calculate missing days/intervals
 daysNA <- nrow(array(unique(data$date[is.na(data$steps)])))
@@ -104,38 +95,31 @@ newdata <- data
 
 ## Imputing values strategy: assign the missing interval value the mean of the interval of all days
 ## Assign mean steps for each missing interval using means calculated above
-newdata[is.na(newdata$steps)==TRUE,1] <- avginterval$x
+newdata[is.na(newdata$steps)==TRUE,1] <- avg.interval$x
 
 # Sum the total number of steps per day on the new dataset
-total2 <- aggregate(newdata$steps, list(date=newdata$date), sum)
-total2$steps <- total2$x
-total2$date <- as.Date(total2$date)
+total.new <- aggregate(newdata$steps, list(date=newdata$date), sum)
+total.new$steps <- total.new$x
+total.new$date <- as.Date(total.new$date)
 
 # Calculate the average number of steps per day
-avg2 <- aggregate(x=newdata$steps, list(date=newdata$date), mean) 
-avg.steps2 <- mean(newdata$steps, na.rm=TRUE)
+avg.new.steps <- round( mean(total.new$steps), digits=0)
 
 # Calculate the median number of steps per day
-med2 <- aggregate(x=newdata$steps, list(date=newdata$date), median)
-med.steps2 <- median(newdata$steps, na.rm=TRUE)
+med.new.steps <- round( median(total.new$steps), digits=0)
 
 # Create a histogram of the number of steps per day
-datebreaks <- as.Date(total2$date)
-p3 <- ggplot(total2, aes(y=steps, x=date)) +geom_bar(stat="identity")
-p3 <- p3 + theme(axis.text.x = element_text(angle=90, hjust=1))
-p3 <- p3 + scale_x_date(breaks=datebreaks, labels=date_format("%b %d") )
-p3 <- p3 + ggtitle("Total Number of Steps Taken Each Day")
+qplot(steps, data=total.new) 
 
-p3
 ```
 
 Total number of rows missing: `r num.rows.missing `
 
 Total numnber of days missing: `r daysNA `
 
-The mean number of steps taken per day Without missing values is: `r avg.steps2`.
+The mean number of steps taken per day Without missing values is: `r avg.new.steps`.
 
-The median number of steps taken per day without missing values is: `r med.steps2`.
+The median number of steps taken per day without missing values is: `r med.new.steps`.
 
 There is no impact to the mean or the median of steps when populating the missing values in the dataset.
 
